@@ -4,6 +4,7 @@ use App\Http\Controllers\ApprovedRequestController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\EmailRequestController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RejectedRequestController;
 use App\Http\Controllers\RequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,10 @@ Route::middleware('auth')->group(function () {
     // Approved
     Route::get('/admin/approved', [ApprovedRequestController::class, 'index'])->name('admin.approved.index');
     Route::get('/admin/approved/data', [ApprovedRequestController::class, 'getData'])->name('admin.approved.data');
+
+    // Rejected
+    Route::get('/admin/rejected', [RejectedRequestController::class, 'index'])->name('admin.rejected.index');
+    Route::get('/admin/rejected/data', [RejectedRequestController::class, 'getData'])->name('admin.rejected.data');
 
 
     // (Optional) Dashboard – keep only if still needed
