@@ -42,7 +42,7 @@
                         class="w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-offset-1 focus:ring-gray-300 py-3 rounded shadow-sm font-medium transition">
                         
                         <!-- Google "G" Logo -->
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg" alt="Google logo" class="w-6 h-6">
+                        <img src="{{ asset('assets/images/Google_Favicon_2025.svg') }}" alt="Google Login" class="w-6 h-6">
 
                         <span>Sign in with Google</span>
                     </a>
