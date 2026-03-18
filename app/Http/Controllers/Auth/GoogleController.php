@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 class GoogleController extends Controller
 {
@@ -20,6 +19,7 @@ class GoogleController extends Controller
                 'profile',
                 'email',
                 'https://www.googleapis.com/auth/admin.directory.user.readonly',
+                'https://www.googleapis.com/auth/admin.directory.user',
             ])
             ->redirect();
     }
@@ -27,46 +27,51 @@ class GoogleController extends Controller
     public function handleGoogleCallback()
     {
         try {
-            // Using stateless() is recommended for APIs or specific redirect flows
             $googleUser = Socialite::driver('google')->stateless()->user();
+
             $email = $googleUser->getEmail();
             $accessToken = $googleUser->token;
 
-            // 1. Security Check: Must be a USM email
-            if (!Str::endsWith($email, '@usm.edu.ph')) {
+            // 🔥 Check if admin
+            if (! $this->isGoogleAdmin($email, $accessToken)) {
                 return redirect()->route('login')
-                    ->with('error', 'Access denied. Please use your @usm.edu.ph account.');
+                    ->with('error', 'Access denied. You must be an admin.');
             }
 
-            // 2. Admin Check: Calls Google Admin SDK
-            if (!$this->isGoogleAdmin($email, $accessToken)) {
-                return redirect()->route('login')
-                    ->with('error', 'Access denied. You do not have Administrative privileges.');
-            }
-
-            // 3. User Sync: Create or Update in local DB
+            // ✅ Create or update user
             $user = User::updateOrCreate(
                 ['email' => $email],
                 [
                     'name' => $googleUser->getName(),
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
-                    'password' => bcrypt(Str::random(16)), // Placeholder password
+                    'password' => bcrypt(Str::random(16)),
                     'email_verified_at' => now(),
                 ]
             );
 
             Auth::login($user);
 
-            // 4. Session Management
-            session(['google_access_token' => $accessToken]);
+            // Optional token
+            $apiToken = $user->createToken('google-login')->plainTextToken;
+
+            session([
+                'google_access_token' => $accessToken,
+                'api_token' => $apiToken,
+            ]);
 
             return redirect()->route('admin.pending.index');
 
-        } catch (\Exception $e) {
-            Log::error('Google Auth Error: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+
+            // 🔥 LOG FULL ERROR
+            \Log::error('Google Login Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return redirect()->route('login')
-                ->with('error', 'Authentication failed. Please try again.');
+                ->with('error', 'Google login failed. Contact administrator.');
         }
     }
 
@@ -74,18 +79,27 @@ class GoogleController extends Controller
     {
         try {
             $response = Http::withToken($accessToken)
-                ->get("https://admin.googleapis.com/admin/directory/v1/users/{$email}");
+                ->get(
+                    'https://admin.googleapis.com/admin/directory/v1/users/' . urlencode($email)
+                );
 
-            if ($response->failed()) {
-                Log::warning("Admin SDK lookup failed for {$email}: " . $response->body());
+            if (! $response->successful()) {
+                \Log::error('Google Admin API Error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
                 return false;
             }
 
-            // Returns true only if 'isAdmin' property is true in Google Workspace
+            // 🔥 IMPORTANT: field is "isAdmin"
             return $response->json('isAdmin') === true;
 
-        } catch (\Exception $e) {
-            Log::error("Admin Check Exception: " . $e->getMessage());
+        } catch (\Throwable $e) {
+
+            \Log::error('Admin Check Exception', [
+                'message' => $e->getMessage(),
+            ]);
+
             return false;
         }
     }
