@@ -62,7 +62,7 @@ $(document).ready(function() {
     let table = $('#requestTable').DataTable({
         processing: true,
         serverSide: true,
-        ajax: "{{ route('admin.pending.data') }}",
+        ajax: "/admin/pending/data",
         columns: [
             {
                 data: null,

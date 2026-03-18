@@ -58,7 +58,7 @@ $(document).ready(function() {
     let table = $('#requestTable').DataTable({
         processing: true,
         serverSide: true,
-        ajax: "{{ route('admin.approved.data') }}",
+        ajax: "/admin/approved/data",
         columns: [
             { data: 'studentno', name: 'studentno' },
             {
