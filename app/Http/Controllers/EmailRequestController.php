@@ -64,25 +64,17 @@ class EmailRequestController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | GET ACTIVE TERM
+        | GET CURRENT TERM ID (NEW API)
         |--------------------------------------------------------------------------
         */
         $activeTermId = null;
 
-        $activeResponse = Http::get(
-            'http://172.16.0.60/academic/api/v2/ActiveSemesters/active-only'
+        $termResponse = Http::get(
+            "http://172.16.0.60/academic/api/v2/sar/SarSettings/current-term-id/campus/{$campusId}"
         );
 
-        if ($activeResponse->successful()) {
-            foreach ($activeResponse->json() as $item) {
-                if (
-                    $item['campusId'] == $campusId &&
-                    $item['isActive'] === true
-                ) {
-                    $activeTermId = $item['termId'];
-                    break;
-                }
-            }
+        if ($termResponse->successful() && isset($termResponse->json()['termId'])) {
+            $activeTermId = $termResponse->json()['termId'];
         }
 
         if (!$activeTermId) {
@@ -115,7 +107,7 @@ class EmailRequestController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | FINAL TERM CHECK (ACTIVE ≠ STUDENT TERM)
+        | FINAL TERM CHECK
         |--------------------------------------------------------------------------
         */
         if (
