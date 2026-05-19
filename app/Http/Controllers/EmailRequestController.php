@@ -67,14 +67,41 @@ class EmailRequestController extends Controller
         | GET CURRENT TERM ID (NEW API)
         |--------------------------------------------------------------------------
         */
+
+        
+        // $activeTermId = null;
+
+        // $termResponse = Http::get(
+        //     "http://172.16.0.60/academic/api/v2/sar/SarSettings/current-term-id/campus/{$campusId}"
+        // );
+
+        // if ($termResponse->successful() && isset($termResponse->json()['termId'])) {
+        //     $activeTermId = $termResponse->json()['termId'];
+        // }
+
+        // if (!$activeTermId) {
+        //     return back()->with([
+        //         'message' => 'Unable to determine active semester.',
+        //         'requestSaved' => false
+        //     ])->withInput();
+        // }
+
+
         $activeTermId = null;
 
-        $termResponse = Http::get(
-            "http://172.16.0.60/academic/api/v2/sar/SarSettings/current-term-id/campus/{$campusId}"
-        );
+        // Default term IDs based on campus
+        if ($campusId == 1) {
+            $activeTermId = 102;
+        } elseif ($campusId == 3) {
+            $activeTermId = 72;
+        } else {
+            $termResponse = Http::get(
+                "http://172.16.0.60/academic/api/v2/sar/SarSettings/current-term-id/campus/{$campusId}"
+            );
 
-        if ($termResponse->successful() && isset($termResponse->json()['termId'])) {
-            $activeTermId = $termResponse->json()['termId'];
+            if ($termResponse->successful() && isset($termResponse->json()['termId'])) {
+                $activeTermId = $termResponse->json()['termId'];
+            }
         }
 
         if (!$activeTermId) {
