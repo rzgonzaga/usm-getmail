@@ -146,22 +146,7 @@ class EmailRequestController extends Controller
                 'requestSaved' => false
             ])->withInput();
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | FINAL TERM CHECK
-        |--------------------------------------------------------------------------
-        */
-        if (
-            !isset($student['termId']) ||
-            (int) $student['termId'] !== (int) $activeTermId
-        ) {
-            return back()->with([
-                'message' => 'Not enrolled for the current semester.',
-                'requestSaved' => false
-            ])->withInput();
-        }
-
+        
         /*
         |--------------------------------------------------------------------------
         | GENERATE PASSWORD
