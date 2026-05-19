@@ -132,6 +132,21 @@ class EmailRequestController extends Controller
 
         $student = $studentResponse->json()['student'];
 
+         /*
+        |--------------------------------------------------------------------------
+        | CHECK IF EMAIL EXISTS
+        |--------------------------------------------------------------------------
+        */
+        if (
+            !isset($student['email']) ||
+            empty(trim($student['email']))
+        ) {
+            return back()->with([
+                'message' => 'No email address found for this student. Please contact the registrar.',
+                'requestSaved' => false
+            ])->withInput();
+        }
+
         /*
         |--------------------------------------------------------------------------
         | FINAL TERM CHECK
