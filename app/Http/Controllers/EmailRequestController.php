@@ -68,7 +68,7 @@ class EmailRequestController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        
+
         // $activeTermId = null;
 
         // $termResponse = Http::get(
@@ -132,11 +132,11 @@ class EmailRequestController extends Controller
 
         $student = $studentResponse->json()['student'];
 
-         /*
-        |--------------------------------------------------------------------------
-        | CHECK IF EMAIL EXISTS
-        |--------------------------------------------------------------------------
-        */
+        /*
+       |--------------------------------------------------------------------------
+       | CHECK IF EMAIL EXISTS
+       |--------------------------------------------------------------------------
+       */
         if (
             !isset($student['email']) ||
             empty(trim($student['email']))
@@ -293,17 +293,28 @@ class EmailRequestController extends Controller
         $request = EmailRequest::findOrFail($id);
 
         $token = session('google_access_token'); // Google admin token
+
         if (!$token) {
-            return response()->json(['error' => 'Google access token missing. Please login again.'], 401);
+            return response()->json([
+                'success' => false,
+                'error' => 'Google access token missing. Please login again.'
+            ], 401);
         }
 
-        $email = $request->email;
+        $email = trim($request->email);
         $firstName = $request->firstname;
         $lastName = $request->lastname;
         $campusId = $request->campus_id;
         $password = $request->password; // Use existing password
 
-        $orgUnit = match ($campusId) {
+        if (empty($email)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Email address is missing.'
+            ], 422);
+        }
+
+        $orgUnit = match ((int) $campusId) {
             1 => '/Main Campus/Students',
             3 => '/Kidapawan City Campus/Students',
             4 => '/Main Campus/Students/Graduate',
@@ -311,28 +322,64 @@ class EmailRequestController extends Controller
         };
 
         try {
-            // Check if user exists in Google
+            /*
+            |--------------------------------------------------------------------------
+            | CHECK IF USER EXISTS IN GOOGLE
+            |--------------------------------------------------------------------------
+            */
             $googleCheck = Http::withToken($token)
                 ->get("https://admin.googleapis.com/admin/directory/v1/users/{$email}");
 
+            /*
+            |--------------------------------------------------------------------------
+            | IF USER EXISTS, UPDATE PASSWORD
+            |--------------------------------------------------------------------------
+            */
             if ($googleCheck->successful()) {
-                // User exists → reset password
                 $googleUpdate = Http::withToken($token)
-                    ->withHeaders(['Content-Type' => 'application/json'])
+                    ->withHeaders([
+                        'Content-Type' => 'application/json'
+                    ])
                     ->put("https://admin.googleapis.com/admin/directory/v1/users/{$email}", [
-                        'password' => $password
+                        'password' => $password,
+                        'changePasswordAtNextLogin' => false
                     ]);
 
-                $request->status = $googleUpdate->successful() ? 'approved' : 'rejected';
                 if ($googleUpdate->successful()) {
+                    $request->status = 'approved';
                     $request->approve_by = auth()->user()->name;
+                    $request->save();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Existing Google account password updated successfully.',
+                        'status' => $request->status,
+                        'email' => $email,
+                        'password' => $password
+                    ]);
                 }
+
+                $request->status = 'rejected';
                 $request->save();
 
-            } elseif ($googleCheck->status() == 404) {
-                // User does not exist → create account
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Google account exists, but password update failed.',
+                    'google_status' => $googleUpdate->status(),
+                    'google_error' => $googleUpdate->json()
+                ], 500);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | IF USER DOES NOT EXIST, CREATE GOOGLE ACCOUNT
+            |--------------------------------------------------------------------------
+            */
+            if ($googleCheck->status() == 404) {
                 $googleCreate = Http::withToken($token)
-                    ->withHeaders(['Content-Type' => 'application/json'])
+                    ->withHeaders([
+                        'Content-Type' => 'application/json'
+                    ])
                     ->post('https://admin.googleapis.com/admin/directory/v1/users', [
                         'name' => [
                             'givenName' => $firstName,
@@ -340,28 +387,61 @@ class EmailRequestController extends Controller
                         ],
                         'password' => $password,
                         'primaryEmail' => $email,
-                        'orgUnitPath' => $orgUnit
+                        'orgUnitPath' => $orgUnit,
+                        'changePasswordAtNextLogin' => false
                     ]);
 
-                $request->status = $googleCreate->successful() ? 'approved' : 'rejected';
                 if ($googleCreate->successful()) {
+                    $request->status = 'approved';
                     $request->approve_by = auth()->user()->name;
+                    $request->save();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Google account created successfully.',
+                        'status' => $request->status,
+                        'email' => $email,
+                        'password' => $password
+                    ]);
                 }
-                $request->save();
-            } else {
+
                 $request->status = 'rejected';
                 $request->save();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Google account creation failed.',
+                    'google_status' => $googleCreate->status(),
+                    'google_error' => $googleCreate->json()
+                ], 500);
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | OTHER GOOGLE CHECK ERROR
+            |--------------------------------------------------------------------------
+            */
+            $request->status = 'rejected';
+            $request->save();
+
             return response()->json([
-                'success' => true,
-                'status' => $request->status,
-                'email' => $email,
-                'password' => $password
-            ]);
+                'success' => false,
+                'message' => 'Unable to check Google account.',
+                'google_status' => $googleCheck->status(),
+                'google_error' => $googleCheck->json()
+            ], 500);
 
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Something went wrong. Check logs.'], 500);
+            \Log::error('Google approval error', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Something went wrong. Check logs.',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 
