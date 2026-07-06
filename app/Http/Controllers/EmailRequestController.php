@@ -94,6 +94,8 @@ class EmailRequestController extends Controller
             $activeTermId = 102;
         } elseif ($campusId == 3) {
             $activeTermId = 72;
+        } elseif ($campusId == 4) {
+            $activeTermId = 104;
         } else {
             $termResponse = Http::get(
                 "http://172.16.0.60/academic/api/v2/sar/SarSettings/current-term-id/campus/{$campusId}"

@@ -62,15 +62,15 @@
                             class="w-full px-3 py-2 border rounded border-slate-200 dark:border-zink-500 focus:outline-none focus:border-custom-500 dark:bg-zink-700">
                             <option value="">---</option>
                             <option value="1" {{ old('campus') == 1 ? 'selected' : '' }}>Main Campus</option>
-                            <option value="2" {{ old('campus') == 2 ? 'selected' : '' }}>Palma Campus</option>
+                            <option value="1" {{ old('campus') == 1 ? 'selected' : '' }}>Palma Campus</option>
                             <option value="3" {{ old('campus') == 3 ? 'selected' : '' }}>Kcc Campus</option>
-                            <option value="4" {{ old('campus') == 4 ? 'selected' : '' }}>M'lang Campus</option>
-                            <option value="5" {{ old('campus') == 5 ? 'selected' : '' }}>Buluan Campus</option>
-                            <option value="6" {{ old('campus') == 6 ? 'selected' : '' }}>Graduate School Main
-                                Campus</option>
-                            <option value="7" {{ old('campus') == 7 ? 'selected' : '' }}>College of Medicine
-                            </option>
-                            <option value="8" {{ old('campus') == 8 ? 'selected' : '' }}>College of Law</option>
+                            <option value="1" {{ old('campus') == 1 ? 'selected' : '' }}>M'lang Campus</option>
+                            <option value="1" {{ old('campus') == 1 ? 'selected' : '' }}>Antipas Campus</option>
+                            <option value="1" {{ old('campus') == 1 ? 'selected' : '' }}>Pigcawayan Campus</option>
+                            <option value="1" {{ old('campus') == 1 ? 'selected' : '' }}>Banisilan Campus</option>
+                            <option value="4" {{ old('campus') == 4 ? 'selected' : '' }}>Graduate School Main Campus</option>
+                            <option value="4" {{ old('campus') == 4 ? 'selected' : '' }}>College of Medicine</option>
+                            <option value="4" {{ old('campus') == 4 ? 'selected' : '' }}>College of Law</option>
                         </select>
                     </div>
 
