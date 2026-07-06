@@ -304,7 +304,7 @@ class EmailRequestController extends Controller
         $orgUnit = match ((int) $campusId) {
             1 => '/Main Campus/Students',
             3 => '/Kidapawan City Campus/Students',
-            4 => '/Main Campus/Students/Graduate',
+            4 => '/Main Campus/Students/Graduate School',
             default => '/'
         };
 
