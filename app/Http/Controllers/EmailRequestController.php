@@ -91,9 +91,9 @@ class EmailRequestController extends Controller
 
         // Default term IDs based on campus
         if ($campusId == 1) {
-            $activeTermId = 102;
+            $activeTermId = 104;
         } elseif ($campusId == 3) {
-            $activeTermId = 72;
+            $activeTermId = 74;
         } elseif ($campusId == 4) {
             $activeTermId = 104;
         } else {
