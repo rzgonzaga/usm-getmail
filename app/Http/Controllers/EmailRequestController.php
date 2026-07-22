@@ -41,30 +41,6 @@ class EmailRequestController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | CHECK EXISTING REQUEST
-        |--------------------------------------------------------------------------
-        */
-        $existing = EmailRequest::where('studentno', $studentNo)
-            ->where('campus_id', $campusId)
-            ->latest()
-            ->first();
-
-        if ($existing && $existing->status === 'approved') {
-            return redirect()->route(
-                'email.request.approved',
-                Crypt::encrypt($existing->id)
-            );
-        }
-
-        if ($existing) {
-            return back()->with([
-                'message' => 'Your request is pending for approval.',
-                'requestSaved' => false
-            ])->withInput();
-        }
-
-        /*
-        |--------------------------------------------------------------------------
         | GET CURRENT TERM ID (NEW API)
         |--------------------------------------------------------------------------
         */
@@ -90,16 +66,17 @@ class EmailRequestController extends Controller
 
         $activeTermId = null;
 
-        // Default term IDs based on campus
-        if ($campusId == 1) {
-            $activeTermId = 104;
-        } elseif ($campusId == 3) {
-            $activeTermId = 74;
-        } elseif ($campusId == 4) {
-            $activeTermId = 104;
+        // Fetch term ID from the database if configured
+        $campusTerm = \App\Models\CampusTerm::where('campus_id', $campusId)->first();
+        
+        $apiTenantId = $campusTerm ? ($campusTerm->tenant_id ?? $campusId) : $campusId;
+        
+        if ($campusTerm && $campusTerm->term_id) {
+            $activeTermId = $campusTerm->term_id;
         } else {
-            $termResponse = Http::get(
-                "http://172.16.0.60/academic/api/v2/sar/SarSettings/current-term-id/campus/{$campusId}"
+            // Fallback to API if not set in DB
+            $termResponse = \Illuminate\Support\Facades\Http::get(
+                "http://172.16.0.60/academic/api/v2/sar/SarSettings/current-term-id/campus/{$apiTenantId}"
             );
 
             if ($termResponse->successful() && isset($termResponse->json()['termId'])) {
@@ -119,8 +96,8 @@ class EmailRequestController extends Controller
         | FETCH STUDENT REGISTRATION
         |--------------------------------------------------------------------------
         */
-        $studentResponse = Http::get(
-            "http://172.16.0.60/academic/api/v2/Registrations/{$corNo}/get-student/{$studentNo}/term/{$activeTermId}?tenantId={$campusId}"
+        $studentResponse = \Illuminate\Support\Facades\Http::get(
+            "http://172.16.0.60/academic/api/v2/Registrations/{$corNo}/get-student/{$studentNo}/term/{$activeTermId}?tenantId={$apiTenantId}"
         );
 
         if (
@@ -134,6 +111,30 @@ class EmailRequestController extends Controller
         }
 
         $student = $studentResponse->json()['student'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK EXISTING REQUEST
+        |--------------------------------------------------------------------------
+        */
+        $existing = EmailRequest::where('studentno', $studentNo)
+            ->where('campus_id', $campusId)
+            ->latest()
+            ->first();
+
+        if ($existing && $existing->status === 'approved') {
+            return redirect()->route(
+                'email.request.approved',
+                Crypt::encrypt($existing->id)
+            );
+        }
+
+        if ($existing) {
+            return back()->with([
+                'message' => 'Your request is pending for approval.',
+                'requestSaved' => false
+            ])->withInput();
+        }
 
         /*
        |--------------------------------------------------------------------------
@@ -274,12 +275,10 @@ class EmailRequestController extends Controller
 
 
     /**
-     * Admin: Approve request (optional)
+     * Admin: Approve All Pending requests using Jobs
      */
-    public function approve($id)
+    public function approveAllPending(Request $request)
     {
-        $request = EmailRequest::findOrFail($id);
-
         $token = session('google_access_token'); // Google admin token
 
         if (!$token) {
@@ -289,148 +288,64 @@ class EmailRequestController extends Controller
             ], 401);
         }
 
-        $email = trim($request->email);
-        $firstName = $request->firstname;
-        $lastName = $request->lastname;
-        $campusId = $request->campus_id;
-        $password = $request->password; // Use existing password
+        // Get all pending requests
+        $pendingRequests = EmailRequest::where('status', 'pending')->get();
 
-        if (empty($email)) {
+        if ($pendingRequests->isEmpty()) {
             return response()->json([
-                'success' => false,
-                'error' => 'Email address is missing.'
-            ], 422);
-        }
-
-        $orgUnit = match ((int) $campusId) {
-            1 => '/Main Campus/Students',
-            3 => '/Kidapawan City Campus/Students',
-            4 => '/Main Campus/Students/Graduate School',
-            default => '/'
-        };
-
-        try {
-            /*
-            |--------------------------------------------------------------------------
-            | CHECK IF USER EXISTS IN GOOGLE
-            |--------------------------------------------------------------------------
-            */
-            $googleCheck = Http::withToken($token)
-                ->get("https://admin.googleapis.com/admin/directory/v1/users/{$email}");
-
-            /*
-            |--------------------------------------------------------------------------
-            | IF USER EXISTS, UPDATE PASSWORD
-            |--------------------------------------------------------------------------
-            */
-            if ($googleCheck->successful()) {
-                $googleUpdate = Http::withToken($token)
-                    ->withHeaders([
-                        'Content-Type' => 'application/json'
-                    ])
-                    ->put("https://admin.googleapis.com/admin/directory/v1/users/{$email}", [
-                        'password' => $password,
-                        'changePasswordAtNextLogin' => false
-                    ]);
-
-                if ($googleUpdate->successful()) {
-                    $request->status = 'approved';
-                    $request->approve_by = auth()->user()->name;
-                    $request->save();
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Existing Google account password updated successfully.',
-                        'status' => $request->status,
-                        'email' => $email,
-                        'password' => $password
-                    ]);
-                }
-
-                $request->status = 'rejected';
-                $request->save();
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Google account exists, but password update failed.',
-                    'google_status' => $googleUpdate->status(),
-                    'google_error' => $googleUpdate->json()
-                ], 500);
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | IF USER DOES NOT EXIST, CREATE GOOGLE ACCOUNT
-            |--------------------------------------------------------------------------
-            */
-            if ($googleCheck->status() == 404) {
-                $googleCreate = Http::withToken($token)
-                    ->withHeaders([
-                        'Content-Type' => 'application/json'
-                    ])
-                    ->post('https://admin.googleapis.com/admin/directory/v1/users', [
-                        'name' => [
-                            'givenName' => $firstName,
-                            'familyName' => $lastName
-                        ],
-                        'password' => $password,
-                        'primaryEmail' => $email,
-                        'orgUnitPath' => $orgUnit,
-                        'changePasswordAtNextLogin' => false
-                    ]);
-
-                if ($googleCreate->successful()) {
-                    $request->status = 'approved';
-                    $request->approve_by = auth()->user()->name;
-                    $request->save();
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Google account created successfully.',
-                        'status' => $request->status,
-                        'email' => $email,
-                        'password' => $password
-                    ]);
-                }
-
-                $request->status = 'rejected';
-                $request->save();
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Google account creation failed.',
-                    'google_status' => $googleCreate->status(),
-                    'google_error' => $googleCreate->json()
-                ], 500);
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | OTHER GOOGLE CHECK ERROR
-            |--------------------------------------------------------------------------
-            */
-            $request->status = 'rejected';
-            $request->save();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to check Google account.',
-                'google_status' => $googleCheck->status(),
-                'google_error' => $googleCheck->json()
-            ], 500);
-
-        } catch (\Throwable $e) {
-            \Log::error('Google approval error', [
-                'email' => $email,
-                'error' => $e->getMessage()
+                'success' => true,
+                'message' => 'No pending requests to approve.'
             ]);
+        }
 
+        $adminName = auth()->user()->name;
+
+        foreach ($pendingRequests as $req) {
+            // Dispatch to queue
+            \App\Jobs\ProcessEmailRequestJob::dispatch($req->id, $token, $adminName);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All pending requests have been queued for background processing.'
+        ]);
+    }
+
+    /**
+     * Admin: Approve All Queued requests using Jobs
+     */
+    public function approveAllQueued(Request $request)
+    {
+        $token = session('google_access_token'); // Google admin token
+
+        if (!$token) {
             return response()->json([
                 'success' => false,
-                'error' => 'Something went wrong. Check logs.',
-                'details' => $e->getMessage()
-            ], 500);
+                'error' => 'Google access token missing. Please login again.'
+            ], 401);
         }
+
+        // Get all queued requests
+        $queuedRequests = EmailRequest::where('status', 'queued')->get();
+
+        if ($queuedRequests->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No queued requests to retry.'
+            ]);
+        }
+
+        $adminName = auth()->user()->name;
+
+        foreach ($queuedRequests as $req) {
+            // Dispatch to queue
+            \App\Jobs\ProcessEmailRequestJob::dispatch($req->id, $token, $adminName);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All queued requests have been scheduled for background processing.'
+        ]);
     }
 
     /**

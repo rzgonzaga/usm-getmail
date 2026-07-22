@@ -10,9 +10,12 @@ use Illuminate\Support\Facades\Route;
 
 // Home route
 Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('admin.pending.index')
-        : view('welcome');
+    if (auth()->check()) {
+        return redirect()->route('admin.pending.index');
+    }
+    
+    $campuses = App\Models\CampusTerm::orderBy('campus_name')->get();
+    return view('welcome', compact('campuses'));
 })->name('welcome');
 
 // Google OAuth routes (guests only)
@@ -39,6 +42,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/rejected', [RejectedRequestController::class, 'index'])->name('admin.rejected.index');
     Route::get('/admin/rejected/data', [RejectedRequestController::class, 'getData'])->name('admin.rejected.data');
 
+    // Queued
+    Route::get('/admin/queued', [App\Http\Controllers\QueuedRequestController::class, 'index'])->name('admin.queued.index');
+    Route::get('/admin/queued/data', [App\Http\Controllers\QueuedRequestController::class, 'getData'])->name('admin.queued.data');
+    
+    // Background Queue Approve All
+    Route::post('/admin/requests/approve-all', [EmailRequestController::class, 'approveAllPending']);
+    Route::post('/admin/requests/approve-all-queued', [EmailRequestController::class, 'approveAllQueued']);
+
+    // Campus Terms
+    Route::get('/admin/campus-terms', [App\Http\Controllers\Admin\CampusTermController::class, 'index'])->name('admin.campus_terms.index');
+    Route::post('/admin/campus-terms', [App\Http\Controllers\Admin\CampusTermController::class, 'store'])->name('admin.campus_terms.store');
+    Route::get('/admin/campus-terms/fetch-terms', [App\Http\Controllers\Admin\CampusTermController::class, 'fetchTerms'])->name('admin.campus_terms.fetch');
+    Route::put('/admin/campus-terms/{id}', [App\Http\Controllers\Admin\CampusTermController::class, 'update'])->name('admin.campus_terms.update');
+    Route::delete('/admin/campus-terms/{id}', [App\Http\Controllers\Admin\CampusTermController::class, 'destroy'])->name('admin.campus_terms.destroy');
 
     // (Optional) Dashboard – keep only if still needed
     Route::get('/dashboard', function () {

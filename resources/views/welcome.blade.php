@@ -61,16 +61,11 @@
                         <select id="campus" name="campus" required
                             class="w-full px-3 py-2 border rounded border-slate-200 dark:border-zink-500 focus:outline-none focus:border-custom-500 dark:bg-zink-700">
                             <option value="">---</option>
-                            <option value="1_main" {{ old('campus') == '1_main' ? 'selected' : '' }}>Main Campus</option>
-                            <option value="1_palma" {{ old('campus') == '1_palma' ? 'selected' : '' }}>Palma Campus</option>
-                            <option value="3" {{ old('campus') == '3' ? 'selected' : '' }}>Kcc Campus</option>
-                            <option value="1_mlang" {{ old('campus') == '1_mlang' ? 'selected' : '' }}>M'lang Campus</option>
-                            <option value="1_antipas" {{ old('campus') == '1_antipas' ? 'selected' : '' }}>Antipas Campus</option>
-                            <option value="1_pigcawayan" {{ old('campus') == '1_pigcawayan' ? 'selected' : '' }}>Pigcawayan Campus</option>
-                            <option value="1_banisilan" {{ old('campus') == '1_banisilan' ? 'selected' : '' }}>Banisilan Campus</option>
-                            <option value="4_grad" {{ old('campus') == '4_grad' ? 'selected' : '' }}>Graduate School Main Campus</option>
-                            <option value="4_med" {{ old('campus') == '4_med' ? 'selected' : '' }}>College of Medicine</option>
-                            <option value="4_law" {{ old('campus') == '4_law' ? 'selected' : '' }}>College of Law</option>
+                            @foreach($campuses as $campus)
+                                <option value="{{ $campus->campus_id }}" {{ old('campus') == $campus->campus_id ? 'selected' : '' }}>
+                                    {{ $campus->campus_name }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -89,10 +84,12 @@
                     <div class="mb-6">
                         <label for="cor_no"
                             class="block mb-2 text-sm font-medium text-slate-700 dark:text-zink-100 text-left">COR # or
-                            Certification of Registration</label>
+                            Certification of Registration
+                            <span class="block text-xs text-slate-500 mt-1 font-normal">(Please enter the last six digits of your COR)</span>
+                        </label>
                         <input type="number" id="cor_no" name="cor_no" value="{{ old('cor_no') }}" required
                             class="w-full px-3 py-2 border rounded border-slate-200 dark:border-zink-500 focus:outline-none focus:border-custom-500 dark:bg-zink-700"
-                            placeholder="Enter COR Number">
+                            placeholder="e.g. 560140">
                     </div>
 
 
