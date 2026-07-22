@@ -29,12 +29,13 @@ class EmailRequestController extends Controller
         |--------------------------------------------------------------------------
         */
         $request->validate([
-            'campus' => 'required|integer',
+            'campus' => 'required|string',
             'student_no' => 'required|string|max:50',
             'cor_no' => 'required|string|max:50',
         ]);
 
-        $campusId = $request->campus;
+        // Extract the integer part if the value contains a string suffix (e.g. "1_banisilan" -> 1)
+        $campusId = (int) (explode('_', $request->campus)[0]);
         $studentNo = $request->student_no;
         $corNo = $request->cor_no;
 
