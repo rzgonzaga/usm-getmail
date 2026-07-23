@@ -43,25 +43,19 @@ class CampusTermController extends Controller
 
         $campusTerm = CampusTerm::findOrFail($id);
 
-        // Handle potential duplicate campus_id
-        $newCampusId = $request->campus_id;
-        $existing = CampusTerm::where('campus_id', $newCampusId)->where('id', '!=', $id)->first();
-        if (!$existing) {
-            $campusTerm->campus_id = $newCampusId;
-        }
-
+        $campusTerm->campus_id = $request->campus_id;
         $campusTerm->campus_name = $request->campus_name;
         $campusTerm->term_id = $request->term_id;
         $campusTerm->tenant_id = $request->tenant_id;
         $campusTerm->save();
 
-        return back()->with('success', 'Campus term updated successfully.');
+        return redirect()->route('admin.campus_terms.index')->with('success', 'Campus term updated successfully.');
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'campus_id' => 'required|integer|unique:campus_terms,campus_id',
+            'campus_id' => 'required|integer',
             'campus_name' => 'required|string|max:255',
             'tenant_id' => 'nullable|integer',
             'term_id' => 'nullable|integer',
@@ -69,7 +63,7 @@ class CampusTermController extends Controller
 
         CampusTerm::create($request->all());
 
-        return back()->with('success', 'New campus added successfully.');
+        return redirect()->route('admin.campus_terms.index')->with('success', 'New campus added successfully.');
     }
 
     public function destroy($id)
@@ -77,7 +71,7 @@ class CampusTermController extends Controller
         $campusTerm = CampusTerm::findOrFail($id);
         $campusTerm->delete();
 
-        return back()->with('success', 'Campus deleted successfully.');
+        return redirect()->route('admin.campus_terms.index')->with('success', 'Campus deleted successfully.');
     }
 
     public function fetchTerms(Request $request)
