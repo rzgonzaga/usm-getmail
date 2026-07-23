@@ -57,7 +57,7 @@ class ProcessEmailRequestJob implements ShouldQueue
         $apiTenantId = $campusTerm ? ($campusTerm->tenant_id ?? $campusId) : $campusId;
 
         $orgUnit = match ((int) $apiTenantId) {
-            1 => '/Main Campus/Students',
+            1 => '/Main Campus/Students/Undergraduate Students',
             3 => '/Kidapawan City Campus/Students',
             4 => '/Main Campus/Students/Graduate School',
             default => '/'
