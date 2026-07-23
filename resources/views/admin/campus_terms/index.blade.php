@@ -209,7 +209,7 @@
             return;
         }
 
-        fetch(`{{ route('admin.campus_terms.fetch') }}?tenant_id=${tenantId}`)
+        fetch(`/admin/campus-terms/fetch-terms?tenant_id=${tenantId}`)
             .then(response => response.json())
             .then(data => {
                 let html = '<option value="">Automatic (Fallback to API)</option>';
