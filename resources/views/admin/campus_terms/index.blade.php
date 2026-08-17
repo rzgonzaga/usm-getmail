@@ -52,6 +52,7 @@
                         <tr>
                             <th class="px-4 py-2 text-left w-24">Campus ID</th>
                             <th class="px-4 py-2 text-left">Campus Name</th>
+                            <th class="px-4 py-2 text-left">Org Unit</th>
                             <th class="px-4 py-2 text-left w-32">Tenant ID</th>
                             <th class="px-4 py-2 text-left">Active Term ID</th>
                             <th class="px-4 py-2 text-center w-32">Action</th>
@@ -62,6 +63,7 @@
                         <tr class="border-b border-slate-200 dark:border-zink-500">
                             <td class="px-4 py-3">{{ $term->campus_id }}</td>
                             <td class="px-4 py-3">{{ $term->campus_name }}</td>
+                            <td class="px-4 py-3">{{ $term->org_unit ?? 'None' }}</td>
                             <td class="px-4 py-3">{{ $term->tenant_id ?? 'Automatic' }}</td>
                             <td class="px-4 py-3">
                                 @if($term->term_id)
@@ -89,7 +91,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center space-x-2">
-                                <button type="button" onclick="openEditModal({{ $term->id }}, '{{ $term->campus_id }}', '{{ addslashes($term->campus_name) }}', '{{ $term->tenant_id }}', '{{ $term->term_id }}')" class="text-blue-500 hover:text-blue-700 p-1 rounded transition-colors" title="Edit">
+                                <button type="button" onclick="openEditModal({{ $term->id }}, '{{ $term->campus_id }}', '{{ addslashes($term->campus_name) }}', '{{ addslashes($term->org_unit) }}', '{{ $term->tenant_id }}', '{{ $term->term_id }}')" class="text-blue-500 hover:text-blue-700 p-1 rounded transition-colors" title="Edit">
                                     <i data-lucide="edit" class="h-5 w-5 inline-block"></i>
                                 </button>
                                 <button type="button" onclick="if(confirm('Are you sure you want to delete this campus?')) { document.getElementById('delete-form-{{ $term->id }}').submit(); }" class="text-red-500 hover:text-red-700 p-1 rounded transition-colors" title="Delete">
@@ -115,7 +117,7 @@
 
 <!-- Add Campus Modal -->
 <div id="addCampusModal" class="hidden fixed inset-0 z-[1050] flex items-center justify-center bg-slate-900/50 overflow-y-auto">
-    <div class="bg-white dark:bg-zink-700 rounded-lg shadow-lg w-[500px] max-w-[95%] m-4 relative flex flex-col">
+    <div class="bg-white dark:bg-zink-700 rounded-lg shadow-lg w-[600px] max-w-[95%] m-4 relative flex flex-col">
         <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-zink-500">
             <h5 class="text-16 font-semibold text-slate-700 dark:text-zink-100">Add New Campus</h5>
             <button type="button" onclick="document.getElementById('addCampusModal').classList.add('hidden')" class="text-slate-500 hover:text-slate-700 dark:text-zink-200 dark:hover:text-white">
@@ -132,6 +134,10 @@
                 <div>
                     <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-zink-100">Campus Name <span class="text-red-500">*</span></label>
                     <input type="text" name="campus_name" required class="w-full px-3 py-2 border rounded border-slate-200 dark:border-zink-500 focus:outline-none focus:border-custom-500 dark:bg-zink-700 text-slate-700 dark:text-zink-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-zink-100">Org Unit <span class="text-slate-400">(Optional)</span></label>
+                    <input type="text" name="org_unit" class="w-full px-3 py-2 border rounded border-slate-200 dark:border-zink-500 focus:outline-none focus:border-custom-500 dark:bg-zink-700 text-slate-700 dark:text-zink-100">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-zink-100">Tenant ID <span class="text-slate-400">(Optional)</span></label>
@@ -158,7 +164,7 @@
 
 <!-- Edit Campus Modal -->
 <div id="editCampusModal" class="hidden fixed inset-0 z-[1050] flex items-center justify-center bg-slate-900/50 overflow-y-auto">
-    <div class="bg-white dark:bg-zink-700 rounded-lg shadow-lg w-[500px] max-w-[95%] m-4 relative flex flex-col">
+    <div class="bg-white dark:bg-zink-700 rounded-lg shadow-lg w-[600px] max-w-[95%] m-4 relative flex flex-col">
         <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-zink-500">
             <h5 class="text-16 font-semibold text-slate-700 dark:text-zink-100">Edit Campus</h5>
             <button type="button" onclick="document.getElementById('editCampusModal').classList.add('hidden')" class="text-slate-500 hover:text-slate-700 dark:text-zink-200 dark:hover:text-white">
@@ -176,6 +182,10 @@
                 <div>
                     <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-zink-100">Campus Name <span class="text-red-500">*</span></label>
                     <input type="text" id="edit-campus-name" name="campus_name" required class="w-full px-3 py-2 border rounded border-slate-200 dark:border-zink-500 focus:outline-none focus:border-custom-500 dark:bg-zink-700 text-slate-700 dark:text-zink-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-zink-100">Org Unit <span class="text-slate-400">(Optional)</span></label>
+                    <input type="text" id="edit-org-unit" name="org_unit" class="w-full px-3 py-2 border rounded border-slate-200 dark:border-zink-500 focus:outline-none focus:border-custom-500 dark:bg-zink-700 text-slate-700 dark:text-zink-100">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-zink-100">Tenant ID <span class="text-slate-400">(Optional)</span></label>
@@ -235,10 +245,11 @@
             });
     }
 
-    function openEditModal(id, campusId, campusName, tenantId, termId) {
+    function openEditModal(id, campusId, campusName, orgUnit, tenantId, termId) {
         document.getElementById('editCampusForm').action = `/admin/campus-terms/${id}`;
         document.getElementById('edit-campus-id').value = campusId;
         document.getElementById('edit-campus-name').value = campusName;
+        document.getElementById('edit-org-unit').value = orgUnit;
         document.getElementById('edit-tenant-id').value = tenantId;
         
         const termSelect = document.getElementById('edit-term-id');

@@ -37,6 +37,7 @@ class CampusTermController extends Controller
         $request->validate([
             'campus_id' => 'required|integer',
             'campus_name' => 'required|string|max:255',
+            'org_unit' => 'nullable|string|max:255',
             'tenant_id' => 'nullable|integer',
             'term_id' => 'nullable|integer',
         ]);
@@ -45,6 +46,7 @@ class CampusTermController extends Controller
 
         $campusTerm->campus_id = $request->campus_id;
         $campusTerm->campus_name = $request->campus_name;
+        $campusTerm->org_unit = $request->org_unit;
         $campusTerm->term_id = $request->term_id;
         $campusTerm->tenant_id = $request->tenant_id;
         $campusTerm->save();
@@ -57,6 +59,7 @@ class CampusTermController extends Controller
         $request->validate([
             'campus_id' => 'required|integer',
             'campus_name' => 'required|string|max:255',
+            'org_unit' => 'nullable|string|max:255',
             'tenant_id' => 'nullable|integer',
             'term_id' => 'nullable|integer',
         ]);
