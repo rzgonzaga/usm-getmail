@@ -46,7 +46,7 @@ class QueuedRequestController extends Controller
 
         $totalFiltered = $query->count();
 
-        $requests = $query->orderBy($columns[$order] ?? 'id', $dir)
+        $requests = $query->with('campusTerm')->orderBy($columns[$order] ?? 'id', $dir)
             ->offset($start)
             ->limit($length)
             ->get();

@@ -68,12 +68,8 @@ $(document).ready(function() {
             {
                 data: 'campus_id',
                 name: 'campus_id',
-                render: id => {
-                    const campuses = {
-                         1: 'Main', 2: 'Palma', 3: 'Kcc', 4: "Grad School/Medicine/Law",
-                        5: 'Buluan', 6: 'Grad School', 7: 'Medicine', 8: 'Law'
-                    };
-                    return campuses[id] ?? 'Unknown';
+                render: function(data, type, row) {
+                    return row.campus_term ? row.campus_term.campus_name : (data || 'Unknown');
                 }
             },
             { data: 'email', name: 'email' },

@@ -15,7 +15,7 @@ class CampusTermController extends Controller
         $apiTerms = [];
         foreach ($campusTerms as $term) {
             $apiTenantId = $term->tenant_id ?? $term->campus_id; // fallback to campus_id if tenant_id is null
-            $apiTerms[$term->campus_id] = \Illuminate\Support\Facades\Cache::remember('terms_tenant_'.$apiTenantId, 3600, function () use ($apiTenantId) {
+            $apiTerms[$term->id] = \Illuminate\Support\Facades\Cache::remember('terms_tenant_'.$apiTenantId, 3600, function () use ($apiTenantId) {
                 try {
                     $response = \Illuminate\Support\Facades\Http::timeout(5)
                         ->get("http://172.16.0.60/academic/api/v2/AyTermConfigs/list?tenantId={$apiTenantId}");

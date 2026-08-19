@@ -53,8 +53,8 @@ class ProcessEmailRequestJob implements ShouldQueue
         }
 
         // Fetch CampusTerm to get the mapped tenant_id for correct Organizational Unit placement
-        $campusTerm = \App\Models\CampusTerm::where('campus_id', $campusId)->first();
-        $apiTenantId = $campusTerm ? ($campusTerm->tenant_id ?? $campusId) : $campusId;
+        $campusTerm = \App\Models\CampusTerm::find($campusId);
+        $apiTenantId = $campusTerm ? ($campusTerm->tenant_id ?? $campusTerm->campus_id) : $campusId;
 
         $orgUnit = match ((int) $apiTenantId) {
             1 => '/Main Campus/Students/Undergraduate Students',

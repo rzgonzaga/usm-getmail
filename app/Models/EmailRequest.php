@@ -27,4 +27,9 @@ class EmailRequest extends Model
     protected $casts = [
         'campus_id' => 'integer',
     ];
+
+    public function campusTerm()
+    {
+        return $this->belongsTo(CampusTerm::class, 'campus_id', 'id');
+    }
 }

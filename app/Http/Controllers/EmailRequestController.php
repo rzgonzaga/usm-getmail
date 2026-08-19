@@ -34,8 +34,8 @@ class EmailRequestController extends Controller
             'cor_no' => 'required|string|max:50',
         ]);
 
-        // Extract the integer part if the value contains a string suffix (e.g. "1_banisilan" -> 1)
-        $campusId = (int) (explode('_', $request->campus)[0]);
+        // The campus field now contains the primary key of the CampusTerm model
+        $campusTermId = $request->campus;
         $studentNo = $request->student_no;
         $corNo = $request->cor_no;
 
@@ -67,9 +67,17 @@ class EmailRequestController extends Controller
         $activeTermId = null;
 
         // Fetch term ID from the database if configured
-        $campusTerm = \App\Models\CampusTerm::where('campus_id', $campusId)->first();
+        $campusTerm = \App\Models\CampusTerm::find($campusTermId);
         
-        $apiTenantId = $campusTerm ? ($campusTerm->tenant_id ?? $campusId) : $campusId;
+        if (!$campusTerm) {
+            return back()->with([
+                'message' => 'Invalid campus selected.',
+                'requestSaved' => false
+            ])->withInput();
+        }
+
+        $campusId = $campusTerm->campus_id;
+        $apiTenantId = $campusTerm->tenant_id ?? $campusId;
         
         if ($campusTerm && $campusTerm->term_id) {
             $activeTermId = $campusTerm->term_id;
@@ -118,7 +126,7 @@ class EmailRequestController extends Controller
         |--------------------------------------------------------------------------
         */
         $existing = EmailRequest::where('studentno', $studentNo)
-            ->where('campus_id', $campusId)
+            ->where('campus_id', $campusTermId)
             ->latest()
             ->first();
 
@@ -167,7 +175,7 @@ class EmailRequestController extends Controller
         |--------------------------------------------------------------------------
         */
         EmailRequest::create([
-            'campus_id' => $campusId,
+            'campus_id' => $campusTermId,
             'studentno' => $studentNo,
             'firstname' => $student['firstName'] ?? null,
             'middlename' => $student['middlename'] ?? null,
@@ -261,7 +269,7 @@ class EmailRequestController extends Controller
 
         $totalFiltered = $query->count();
 
-        $requests = $query->orderBy($columns[$order] ?? 'id', $dir)
+        $requests = $query->with('campusTerm')->orderBy($columns[$order] ?? 'id', $dir)
             ->offset($start)
             ->limit($length)
             ->get();

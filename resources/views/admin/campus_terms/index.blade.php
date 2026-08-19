@@ -67,8 +67,8 @@
                                 @if($term->term_id)
                                     @php
                                         $termDesc = null;
-                                        if(isset($apiTerms[$term->campus_id])) {
-                                            foreach($apiTerms[$term->campus_id] as $apiTerm) {
+                                        if(isset($apiTerms[$term->id])) {
+                                            foreach($apiTerms[$term->id] as $apiTerm) {
                                                 if($apiTerm['termId'] == $term->term_id) {
                                                     $termDesc = $apiTerm['academicYear'] . ' - ' . $apiTerm['schoolTerm'];
                                                     break;
